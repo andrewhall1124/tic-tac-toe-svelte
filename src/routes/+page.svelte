@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { computerMove, computerPlayers } from '$lib/players';
+	import { computerMove, computerPlayers, getWinner, getDraw } from '$lib/players';
 
 	let side: string = $state('X');
+	let opponentSide: string = $derived(side == 'X' ? 'O' : 'X')
 	let type: string = $state('random');
 	let squares: (null | string)[] = $state(Array(9).fill(null));
 	let turn: string = $state('X');
@@ -23,30 +24,8 @@
 		changeTurn();
 	}
 
-	let winner: string | null = $derived.by(() => {
-		const lines = [
-			// Rows
-			[0, 1, 2],
-			[3, 4, 5],
-			[6, 7, 8],
-			// Columns
-			[0, 3, 6],
-			[1, 4, 7],
-			[2, 5, 8],
-			// Diagonals
-			[0, 4, 8],
-			[2, 4, 6]
-		];
-
-		for (const line of lines) {
-			let [a, b, c] = line;
-			if (squares[a] != null && squares[a] == squares[b] && squares[b] == squares[c]) {
-				return squares[a];
-			}
-		}
-
-		return null;
-	});
+	let winner: string | null = $derived(getWinner(squares))
+	let draw: boolean = $derived(getDraw(squares))
 
 	const reset = () => {
 		squares = Array(9).fill(null);
@@ -54,8 +33,8 @@
 	};
 
 	$effect(() => {
-		if (turn != side) {
-			const opponentMove = computerMove(type, squares);
+		if (turn != side && winner == null) {
+			const opponentMove = computerMove(opponentSide, type, squares);
 			makeMove(opponentMove);
 			changeTurn();
 		}
@@ -90,7 +69,7 @@
 	</div>
 	{#if winner !== null}
 			<div>Player {winner} wins!</div>
-	{:else if squares.every((square) => square !== null)}
+	{:else if draw}
 			<div>It's a draw!</div>
 	{:else}
 		<div>Player {turn} turn.</div>
