@@ -1,10 +1,29 @@
 <script lang="ts">
-	import { computerMove } from '$lib/players';
-	let squares: (null | number)[] = $state(Array(9).fill(null));
-	let turn: number = $state(0);
-	let player: string = $state('player');
+	import { computerMove, computerPlayers } from '$lib/players';
 
-	let winner: number | null = $derived.by(() => {
+	let side: string = $state('X');
+	let type: string = $state('random');
+	let squares: (null | string)[] = $state(Array(9).fill(null));
+	let turn: string = $state('X');
+
+	const sides: string[] = ['X', 'O'];
+
+	function makeMove(move: number): void {
+		const newSquares = [...squares];
+		newSquares[move] = turn;
+		squares = newSquares;
+	}
+
+	const changeTurn = () => {
+		turn = turn === 'X' ? 'O' : 'X';
+	};
+
+	function playerMove(index: number): void {
+		makeMove(index);
+		changeTurn();
+	}
+
+	let winner: string | null = $derived.by(() => {
 		const lines = [
 			// Rows
 			[0, 1, 2],
@@ -29,70 +48,63 @@
 		return null;
 	});
 
-	function playerMove(index: number): void {
-		if (squares[index] !== null || winner !== null) return;
-
-		const newSquares = [...squares];
-		newSquares[index] = turn;
-		squares = newSquares;
-
-		turn = turn === 0 ? 1 : 0;
-
-		if (winner === null && squares.some((square) => square === null)) {
-			computerMove(player, squares, turn);
-		}
-	}
-
-	function reset() {
+	const reset = () => {
 		squares = Array(9).fill(null);
-		turn = 0;
-	}
+		turn = 'X';
+	};
+
+	$effect(() => {
+		if (turn != side) {
+			const opponentMove = computerMove(type, squares);
+			makeMove(opponentMove);
+			changeTurn();
+		}
+	});
 </script>
 
-<!-- Page -->
-<div class="flex h-screen flex-col items-center bg-red-100">
-	<div class="flex w-full justify-between bg-blue-100 p-4">
-		<div>Tic-Tac-Toe</div>
+<div class="page">
+	<div class="header">
+		<h1>Tic-Tac-Toe</h1>
 		<div>
-			Player:
-			<select
-				class="w-20 border border-black"
-				bind:value={player}
-			>
-				{#each ['random'] as question}
-					<option value={question}>
-						{question}
-					</option>
+			Player 1:
+			<select bind:value={side} onchange={() => reset()}>
+				{#each sides as value}
+					<option {value}>{value}</option>
 				{/each}
 			</select>
 		</div>
-	</div>
-	<div class="flex h-full flex-col items-center justify-center bg-green-100">
-		{#if winner !== null}
-			<div class="flex gap-2">
-				<div>Player {winner === 0 ? 'X' : 'O'} wins!</div>
-				<button class="text-blue-500" onclick={reset}>Play again?</button>
-			</div>
-		{:else if squares.every((square) => square !== null)}
-			<div class="flex gap-2">
-				<div>It's a draw!</div>
-				<button class="text-blue-500" onclick={reset}>Play again?</button>
-			</div>
-		{:else}
-			<div>Player {turn === 0 ? 'X' : 'O'} turn.</div>
-		{/if}
-
-		<!-- Board -->
-		<div class="grid grid-cols-3">
-			{#each squares as square, index}
-				<button
-					class="h-16 w-16 border border-black"
-					onclick={() => playerMove(index)}
-					disabled={square !== null || winner !== null}
-				>
-					{square === null ? '' : square === 0 ? 'X' : 'O'}
-				</button>
-			{/each}
+		<div>
+			Player 2:
+			<select bind:value={type} onchange={() => reset()}>
+				{#each computerPlayers as value}
+					<option {value}>{value}</option>
+				{/each}
+			</select>
 		</div>
+		<div>
+			<button class='reset' onclick={() => reset()}>
+				Reset
+			</button>
+		</div>
+
+	</div>
+	{#if winner !== null}
+			<div>Player {winner} wins!</div>
+	{:else if squares.every((square) => square !== null)}
+			<div>It's a draw!</div>
+	{:else}
+		<div>Player {turn} turn.</div>
+	{/if}
+
+	<div class="board">
+		{#each squares as square, index}
+			<button
+			class="square"
+				onclick={() => playerMove(index)}
+				disabled={square !== null || winner !== null}
+			>
+				 {square}
+			</button>
+		{/each}
 	</div>
 </div>
