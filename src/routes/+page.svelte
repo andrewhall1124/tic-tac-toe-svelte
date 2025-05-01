@@ -2,30 +2,24 @@
 	import { computerMove, computerPlayers, getWinner, getDraw } from '$lib/players';
 
 	let side: string = $state('X');
-	let opponentSide: string = $derived(side == 'X' ? 'O' : 'X')
+	let opponentSide: string = $derived(side == 'X' ? 'O' : 'X');
 	let type: string = $state('random');
 	let squares: (null | string)[] = $state(Array(9).fill(null));
 	let turn: string = $state('X');
 
 	const sides: string[] = ['X', 'O'];
 
-	function makeMove(move: number): void {
-		const newSquares = [...squares];
-		newSquares[move] = turn;
-		squares = newSquares;
-	}
-
 	const changeTurn = () => {
 		turn = turn === 'X' ? 'O' : 'X';
 	};
 
 	function playerMove(index: number): void {
-		makeMove(index);
+		squares[index] = turn;
 		changeTurn();
 	}
 
-	let winner: string | null = $derived(getWinner(squares))
-	let draw: boolean = $derived(getDraw(squares))
+	let winner: string | null = $derived(getWinner(squares));
+	let draw: boolean = $derived(getDraw(squares));
 
 	const reset = () => {
 		squares = Array(9).fill(null);
@@ -34,8 +28,8 @@
 
 	$effect(() => {
 		if (turn != side && winner == null) {
-			const opponentMove = computerMove(opponentSide, type, squares);
-			makeMove(opponentMove);
+			const index = computerMove(opponentSide, type, squares);
+			squares[index] = turn;
 			changeTurn();
 		}
 	});
@@ -61,16 +55,13 @@
 			</select>
 		</div>
 		<div>
-			<button class='reset' onclick={() => reset()}>
-				Reset
-			</button>
+			<button class="reset" onclick={() => reset()}> Reset </button>
 		</div>
-
 	</div>
 	{#if winner !== null}
-			<div>Player {winner} wins!</div>
+		<div>Player {winner} wins!</div>
 	{:else if draw}
-			<div>It's a draw!</div>
+		<div>It's a draw!</div>
 	{:else}
 		<div>Player {turn} turn.</div>
 	{/if}
@@ -78,11 +69,11 @@
 	<div class="board">
 		{#each squares as square, index}
 			<button
-			class="square"
+				class="square"
 				onclick={() => playerMove(index)}
 				disabled={square !== null || winner !== null}
 			>
-				 {square}
+				{square}
 			</button>
 		{/each}
 	</div>
